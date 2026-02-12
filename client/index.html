@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Time Client</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      #result {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        min-height: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Time Client</h1>
+    <button id="fetchBtn">Get Time</button>
+    <div id="result">ここにレスポンスが表示されます</div>
+
+    <h1>Echo Client</h1>
+    <button id="echoBtn">Send Echo</button>
+    <div id="echoResult">ここにレスポンスが表示されます</div>
+
+    <script>
+      document
+        .getElementById("fetchBtn")
+        .addEventListener("click", async () => {
+          const resultDiv = document.getElementById("result");
+          resultDiv.textContent = "取得中...";
+
+          try {
+            const response = await fetch("http://localhost:3000/time");
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.text();
+            resultDiv.textContent = data;
+          } catch (error) {
+            resultDiv.textContent = `エラー: ${error.message}`;
+          }
+        });
+
+      document.getElementById("echoBtn").addEventListener("click", async () => {
+        const resultDiv = document.getElementById("echoResult");
+        resultDiv.textContent = "送信中...";
+
+        try {
+          const response = await fetch("http://localhost:3000/echo", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: "John", email: "john@example.com" }),
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          resultDiv.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          resultDiv.textContent = `エラー: ${error.message}`;
+        }
+      });
+    </script>
+  </body>
+</html>
