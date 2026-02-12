@@ -54,9 +54,9 @@ func isApplicationJson(req *http.Request) bool {
 func main() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/echo", echoHandler)
+	mux.HandleFunc("/echo", CorsMiddleware(echoHandler))
 
-	mux.HandleFunc("/time", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/time", CorsMiddleware(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Add("Content-Type", "text/plain")
 
 		timezone, err := time.LoadLocation("Asia/Tokyo")
@@ -64,7 +64,7 @@ func main() {
 			panic(err)
 		}
 		fmt.Fprint(w, time.Now().In(timezone).Format("2006/01/02 15:04:05"))
-	})
+	}))
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Add("Content-Type", "text/plain")
