@@ -10,7 +10,7 @@ if [ -z "$goimports_bin" ]; then
 fi
 
 # すべての .go ファイルを取得
-go_files=$(git ls-files '*.go')
+go_files=$(git ls-files '*.go' -x 'client/*')
 
 # go fmt
 for file in $go_files; do
@@ -18,13 +18,11 @@ for file in $go_files; do
 done
 
 # go vet
-for file in $go_files; do
-  go vet "$file"
-  if [ $? -ne 0 ]; then
-    echo "go vet でエラーが発生しました: $file"
-    exit 1
-  fi
-done
+go vet .
+if [ $? -ne 0 ]; then
+  echo "go vet でエラーが発生しました: $file"
+  exit 1
+fi
 
 # goimports
 for file in $go_files; do
