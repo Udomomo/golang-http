@@ -54,8 +54,10 @@ func isApplicationJson(req *http.Request) bool {
 func main() {
 	mux := http.NewServeMux()
 
+	// User型のjsonをPOSTリクエストで受け取り、バリデーションに通過すればそのまま返す。
 	mux.HandleFunc("/echo", CorsMiddleware(echoHandler))
 
+	// GETリクエストを受け取り、現在時刻を返す。
 	mux.HandleFunc("/time", CorsMiddleware(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Add("Content-Type", "text/plain")
 
