@@ -105,6 +105,7 @@ func main() {
 	mux.HandleFunc("/inc", CorsMiddleware(c.handleInc))
 
 	var h http.Handler = mux
+	fmt.Println("Server is running on localhost:3000...")
 	if err := http.ListenAndServe("localhost:3000", h); err != nil {
 		fmt.Println("ListenAndServe error: ", err)
 	}
