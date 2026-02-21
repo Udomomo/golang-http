@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -104,18 +108,42 @@ func main() {
 	mux.HandleFunc("/count", CorsMiddleware(c.handleGet))
 	mux.HandleFunc("/inc", CorsMiddleware(c.handleInc))
 
+	// sleepリクエスト (graceful shutdownテスト用)
+	mux.HandleFunc("/sleep", CorsMiddleware(func(w http.ResponseWriter, req *http.Request) {
+		for i := 1; i <= 10; i++ {
+			fmt.Println("sleep", i, "秒経過")
+			time.Sleep(1 * time.Second)
+		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "slept 10 seconds")
+	}))
+
 	var h http.Handler = mux
 	srv := &http.Server{
 		Addr:              ":3000",
 		Handler:           h,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      10 * time.Second,
+		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
 
-	fmt.Println("Server is running on localhost:3000...")
-	if err := srv.ListenAndServe(); err != nil {
-		fmt.Println("ListenAndServe error: ", err)
+	go func() {
+		fmt.Println("Starting server on localhost:3000...")
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			fmt.Println("ListenAndServe error: ", err)
+		}
+	}()
+
+	// Ctrl+Cでgraceful Shutdown
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+
+	<-sig
+
+	if err := srv.Shutdown(context.Background()); err != nil {
+		fmt.Printf("HTTP server Shutdown: %v", err)
 	}
+
+	fmt.Println("Gracefully exiting...")
 }
