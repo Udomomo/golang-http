@@ -4,12 +4,41 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 )
 
 type User struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+type Counter struct {
+	mu    sync.Mutex
+	count int
+}
+
+// ハンドラ関数からCounterを操作できるようレシーバ関数にしている。
+func (c *Counter) handleGet(w http.ResponseWriter, req *http.Request) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	w.Header().Add("Content-Type", "text/plain")
+	fmt.Fprint(w, c.count)
+}
+
+func (c *Counter) handleInc(w http.ResponseWriter, req *http.Request) {
+	if !isMethodAllowed("POST", req) {
+		w.Header().Add("Content-type", "text/plain")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.count++
+
+	w.Header().Add("Content-Type", "text/plain")
+	fmt.Fprint(w, c.count)
 }
 
 func echoHandler(w http.ResponseWriter, req *http.Request) {
@@ -67,6 +96,13 @@ func main() {
 		}
 		fmt.Fprint(w, time.Now().In(timezone).Format("2006/01/02 15:04:05"))
 	}))
+
+	// カウンタの実装
+	c := &Counter{
+		count: 0,
+	}
+	mux.HandleFunc("/count", CorsMiddleware(c.handleGet))
+	mux.HandleFunc("/inc", CorsMiddleware(c.handleInc))
 
 	var h http.Handler = mux
 	if err := http.ListenAndServe("localhost:3000", h); err != nil {
